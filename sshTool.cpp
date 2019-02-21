@@ -1,5 +1,4 @@
 #include <iostream>
-#include <libssh/libssh.h>
 #include "sshTool.h"
 
 using namespace std;
@@ -90,5 +89,65 @@ void sshSession::Disconnect()
 
 sshSession::~sshSession()
 {
+  // free session when deleting class instence
   ssh_free(session);
+}
+
+void sshSession::Execute(const char *command)
+{
+  // create new channel
+  channel = ssh_channel_new(session);
+  if (channel == NULL)
+  {
+    cerr << "sshSession: Error creating channel" << endl;
+    ssh_disconnect(session);
+    ssh_free(session);
+    exit(0);
+  }
+
+  // create new session using new channel
+  rc = ssh_channel_open_session(channel);
+  if (rc != SSH_OK)
+  {
+    cerr << "sshSession: Error opening session using channel" << endl;
+    ssh_channel_free(channel);
+    ssh_disconnect(session);
+    ssh_free(session);
+    exit(0);
+  }
+
+  // execute command
+  rc = ssh_channel_request_exec(channel, command);
+  if (rc != SSH_OK)
+  {
+    cerr << "sshSession: Error trying to execute command: " << command << " on remote host" << endl;
+    ssh_channel_close(channel);
+    ssh_channel_send_eof(channel);
+    ssh_channel_free(channel);
+    ssh_disconnect(session);
+    ssh_free(session);
+    exit(0);
+  }
+
+  // if something has to be printed to the screen (command output)
+  nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), 0);
+  while (nbytes > 0)
+  {
+    if (fwrite(buffer, 1, nbytes, stdout) != nbytes)
+    {
+      cout << "sshSession: Error reading command output on remote host" << endl;
+      ssh_channel_close(channel);
+      ssh_channel_send_eof(channel);
+      ssh_channel_free(channel);
+      ssh_disconnect(session);
+      ssh_free(session);
+      exit(0);
+    }
+    nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), 0);
+  }
+
+  // close channel
+  ssh_channel_close(channel);
+  ssh_channel_send_eof(channel);
+  ssh_channel_free(channel);
 }

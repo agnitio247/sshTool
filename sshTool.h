@@ -7,9 +7,10 @@ class sshSession
 {
 private:
   ssh_session session;
-  int verbosity, connection, port;
+  int connection, port, rc, nbytes;
   const char *password, *host;
   ssh_channel channel;
+  char buffer[256];
 
 public:
   void SetHost(const char* ssh_host);
@@ -22,4 +23,5 @@ public:
   void Authenticate(const char* ssh_password);
   void Disconnect();
   ~sshSession();
+  void Execute(const char *command);
 };

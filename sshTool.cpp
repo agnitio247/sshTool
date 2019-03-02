@@ -1,7 +1,4 @@
-#include <iostream>
 #include "sshTool.h"
-
-using namespace std;
 
 // function to set private host variable
 void sshSession::SetHost(const char* ssh_host)

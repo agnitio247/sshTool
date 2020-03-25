@@ -1,2 +1,2 @@
 # ssh tool
-Simple ssh class written in c++ 
+## Simple ssh c++ class
